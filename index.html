@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Zombie Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: radial-gradient(circle, #111122 0%, #000011 100%);
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            z-index: 100;
+            text-shadow: 2px 2px 4px black;
+        }
+        #ammo {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: white;
+            font-size: 24px;
+            z-index: 100;
+            text-shadow: 2px 2px 4px black;
+        }
+        #health {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-size: 24px;
+            z-index: 100;
+            text-shadow: 2px 2px 4px black;
+        }
+        #level {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 18px;
+            z-index: 100;
+            text-shadow: 2px 2px 4px black;
+        }
+        #weapon-health {
+            position: absolute;
+            bottom: 40px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            z-index: 100;
+            text-shadow: 2px 2px 4px black;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #crosshair::before, #crosshair::after {
+            content: "";
+            position: absolute;
+            background: rgba(255, 215, 0, 0.8); /* Gold color */
+        }
+        #crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 9px;
+            top: 0;
+        }
+        #crosshair::after {
+            width: 20px;
+            height: 2px;
+            left: 0;
+            top: 9px;
+        }
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            font-size: 48px;
+        }
+        #victory {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            font-size: 48px;
+        }
+        #restart-btn, #next-level-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 24px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #restart-btn:hover, #next-level-btn:hover {
+            background: #cc0000;
+        }
+        .pyramid {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            bottom: 50px;
+            left: 50px;
+            opacity: 0.1;
+            z-index: 1;
+        }
+        .all-seeing-eye {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, gold 30%, transparent 40%);
+            border-radius: 50%;
+            opacity: 0.05;
+            z-index: 1;
+        }
+
+        /* CSS Zombie */
+        .zombie {
+            position: absolute;
+            width: 40px;
+            height: 80px;
+            bottom: 50px;
+            z-index: 10;
+            transform-origin: bottom center;
+        }
+        .zombie-body {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: #3a7d3a;
+            border-radius: 5px;
+        }
+        .zombie-head {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            top: -20px;
+            left: 5px;
+            background-color: #66aa66;
+            border-radius: 50% 50% 0 0;
+        }
+        .zombie-eye {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #ff0000;
+            border-radius: 50%;
+        }
+        .zombie-eye.left {
+            top: 8px;
+            left: 5px;
+        }
+        .zombie-eye.right {
+            top: 8px;
+            right: 5px;
+        }
+        .zombie-mouth {
+            position: absolute;
+            width: 20px;
+            height: 10px;
+            bottom: 5px;
+            left: 5px;
+            background-color: #882222;
+            border-radius: 0 0 50% 50%;
+        }
+        .zombie-arm {
+            position: absolute;
+            width: 10px;
+            height: 40px;
+            background-color: #4a8d4a;
+        }
+        .zombie-arm.left {
+            top: 15px;
+            left: -10px;
+            transform-origin: right center;
+            animation: zombieArmSwing 3s infinite ease-in-out;
+        }
+        .zombie-arm.right {
+            top: 15px;
+            right: -10px;
+            transform-origin: left center;
+            animation: zombieArmSwing 3s infinite ease-in-out reverse;
+        }
+        .zombie-leg {
+            position: absolute;
+            width: 12px;
+            height: 30px;
+            bottom: -25px;
+            background-color: #2a6d2a;
+        }
+        .zombie-leg.left {
+            left: 5px;
+            animation: zombieLegMove 2s infinite ease-in-out;
+        }
+        .zombie-leg.right {
+            right: 5px;
+            animation: zombieLegMove 2s infinite ease-in-out reverse;
+        }
+
+        @keyframes zombieArmSwing {
+            0%, 100% { transform: rotate(-20deg); }
+            50% { transform: rotate(20deg); }
+        }
+
+        @keyframes zombieLegMove {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(10deg); }
+        }
+
+        .bullet {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background-color: gold;
+            border-radius: 50%;
+            z-index: 5;
+            box-shadow: 0 0 5px gold;
+        }
+        
+        .weapon-broken {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 36px;
+            z-index: 150;
+            text-shadow: 2px 2px 4px black;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div class="pyramid"></div>
+        <div class="all-seeing-eye"></div>
+        <div id="ui">Zombies killed: <span id="score">0</span></div>
+        <div id="level">Level: <span id="level-count">1</span></div>
+        <div id="ammo">Ammo: <span id="ammo-count">10</span>/<span id="ammo-total">50</span></div>
+        <div id="health">Health: <span id="health-count">100</span></div>
+        <div id="weapon-health">Weapon: <span id="weapon-health-count">100</span>%</div>
+        <div id="crosshair"></div>
+        <div id="weapon-broken" class="weapon-broken">WEAPON BROKEN!</div>
+        <div id="game-over">
+            <div>GAME OVER</div>
+            <div>Zombies killed: <span id="final-score">0</span></div>
+            <button id="restart-btn">Restart</button>
+        </div>
+        <div id="victory">
+            <div>LEVEL COMPLETE</div>
+            <div>Zombies eliminated: <span id="victory-score">0</span></div>
+            <button id="next-level-btn">Next Level</button>
+        </div>
+    </div>
+
+    <script>
+        class ZombieGame {
+            constructor() {
+                this.gameContainer = document.getElementById('game-container');
+                this.width = 800;
+                this.height = 600;
+                
+                this.score = 0;
+                this.ammo = 10;
+                this.totalAmmo = 50;
+                this.health = 100;
+                this.weaponHealth = 100;
+                this.level = 1;
+                this.gameOver = false;
+                this.victory = false;
+                this.weaponBroken = false;
+                this.zombies = [];
+                this.bullets = [];
+                this.lastShotTime = 0;
+                this.shotDelay = 500; // ms
+                this.zombieSpawnDelay = 5000; // ms
+                this.lastZombieSpawnTime = 0;
+                this.zombieSpeed = 0.3;
+                this.zombieAttackRate = 5000; // ms
+                this.zombieDamage = 5;
+                this.weaponDamageRate = 2000; // ms
+                this.zombiesToSpawn = 5 + this.level * 3;
+                this.zombiesSpawned = 0;
+
+                this.player = {
+                    x: this.width / 2,
+                    y: this.height - 100,
+                    width: 50,
+                    height: 100
+                };
+
+                this.createWeapon();
+                this.gameLoop = setInterval(this.update.bind(this), 16);
+                
+                document.addEventListener('mousedown', this.handleShoot.bind(this));
+                document.addEventListener('keydown', this.handleReload.bind(this));
+                document.getElementById('restart-btn').addEventListener('click', this.restartGame.bind(this));
+                document.getElementById('next-level-btn').addEventListener('click', this.nextLevel.bind(this));
+            }
+
+            createWeapon() {
+                this.weapon = document.createElement('div');
+                this.weapon.style.position = 'absolute';
+                this.weapon.style.width = '60px';
+                this.weapon.style.height = '20px';
+                this.weapon.style.backgroundColor = '#555555';
+                this.weapon.style.left = (this.width / 2 - 30) + 'px';
+                this.weapon.style.bottom = '80px';
+                this.weapon.style.zIndex = '20';
+                
+                const barrel = document.createElement('div');
+                barrel.style.position = 'absolute';
+                barrel.style.width = '30px';
+                barrel.style.height = '10px';
+                barrel.style.backgroundColor = '#333333';
+                barrel.style.left = '60px';
+                barrel.style.top = '5px';
+                
+                this.weapon.appendChild(barrel);
+                this.gameContainer.appendChild(this.weapon);
+            }
+
+            spawnZombie() {
+                const now = Date.now();
+                if (now - this.lastZombieSpawnTime < this.zombieSpawnDelay || 
+                    this.zombiesSpawned >= this.zombiesToSpawn) return;
+                this.lastZombieSpawnTime = now;
+                this.zombiesSpawned++;
+
+                const zombie = document.createElement('div');
+                zombie.className = 'zombie';
+                
+                // Случайная сторона появления (лево/право)
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const x = side > 0 ? -50 : this.width + 50;
+                
+                zombie.style.left = x + 'px';
+                
+                // Создаем части тела зомби
+                const body = document.createElement('div');
+                body.className = 'zombie-body';
+                
+                const head = document.createElement('div');
+                head.className = 'zombie-head';
+                
+                const eyeLeft = document.createElement('div');
+                eyeLeft.className = 'zombie-eye left';
+                
+                const eyeRight = document.createElement('div');
+                eyeRight.className = 'zombie-eye right';
+                
+                const mouth = document.createElement('div');
+                mouth.className = 'zombie-mouth';
+                
+                const armLeft = document.createElement('div');
+                armLeft.className = 'zombie-arm left';
+                
+                const armRight = document.createElement('div');
+                armRight.className = 'zombie-arm right';
+                
+                const legLeft = document.createElement('div');
+                legLeft.className = 'zombie-leg left';
+                
+                const legRight = document.createElement('div');
+                legRight.className = 'zombie-leg right';
+                
+                head.appendChild(eyeLeft);
+                head.appendChild(eyeRight);
+                head.appendChild(mouth);
+                
+                zombie.appendChild(body);
+                zombie.appendChild(head);
+                zombie.appendChild(armLeft);
+                zombie.appendChild(armRight);
+                zombie.appendChild(legLeft);
+                zombie.appendChild(legRight);
+                
+                this.gameContainer.appendChild(zombie);
+                
+                // Направление движения (к игроку)
+                const direction = x > this.width / 2 ? -1 : 1;
+                
+                this.zombies.push({
+                    element: zombie,
+                    x: x,
+                    y: this.height - 130,
+                    speed: this.zombieSpeed * (0.7 + Math.random() * 0.6),
+                    direction: direction,
+                    health: 100,
+                    lastAttackTime: 0,
+                    lastWeaponDamageTime: 0
+                });
+            }
+
+            handleShoot(e) {
+                if (this.gameOver || this.victory || this.weaponBroken) return;
+                
+                const now = Date.now();
+                if (now - this.lastShotTime < this.shotDelay) return;
+                this.lastShotTime = now;
+                
+                if (this.ammo <= 0) {
+                    return;
+                }
+                
+                this.ammo--;
+                this.updateAmmoDisplay();
+                
+                // Создаем пулю
+                const bullet = document.createElement('div');
+                bullet.className = 'bullet';
+                bullet.style.left = (this.width / 2) + 'px';
+                bullet.style.top = (this.height - 100) + 'px';
+                this.gameContainer.appendChild(bullet);
+                
+                // Направление к курсору
+                const mouseX = e.clientX - this.gameContainer.getBoundingClientRect().left;
+                const mouseY = e.clientY - this.gameContainer.getBoundingClientRect().top;
+                const angle = Math.atan2(mouseY - (this.height - 100), mouseX - this.width / 2);
+                
+                this.bullets.push({
+                    element: bullet,
+                    x: this.width / 2,
+                    y: this.height - 100,
+                    vx: Math.cos(angle) * 10,
+                    vy: Math.sin(angle) * 10
+                });
+                
+                // Анимация отдачи
+                this.weapon.style.left = (this.width / 2 - 35) + 'px';
+                setTimeout(() => {
+                    this.weapon.style.left = (this.width / 2 - 30) + 'px';
+                }, 100);
+            }
+
+            handleReload(e) {
+                if (e.key === 'r' && this.totalAmmo > 0 && this.ammo < 10 && !this.weaponBroken) {
+                    const needed = 10 - this.ammo;
+                    const available = Math.min(needed, this.totalAmmo);
+                    this.ammo += available;
+                    this.totalAmmo -= available;
+                    this.updateAmmoDisplay();
+                }
+            }
+
+            damageWeapon() {
+                if (this.weaponBroken) return;
+                
+                this.weaponHealth -= 10;
+                if (this.weaponHealth <= 0) {
+                    this.weaponHealth = 0;
+                    this.weaponBroken = true;
+                    document.getElementById('weapon-broken').style.display = 'block';
+                    setTimeout(() => {
+                        this.gameOver = true;
+                        document.getElementById('final-score').textContent = this.score;
+                        document.getElementById('game-over').style.display = 'flex';
+                        clearInterval(this.gameLoop);
+                    }, 1500);
+                }
+                this.updateWeaponHealthDisplay();
+            }
+
+            checkVictory() {
+                // Проверяем условия победы: все зомби убиты, патроны закончились, и больше не будут появляться зомби
+                if (this.zombies.length === 0 && 
+                    this.ammo === 0 && 
+                    this.totalAmmo === 0 && 
+                    this.zombiesSpawned >= this.zombiesToSpawn) {
+                    
+                    this.victory = true;
+                    document.getElementById('victory-score').textContent = this.score;
+                    document.getElementById('victory').style.display = 'flex';
+                    clearInterval(this.gameLoop);
+                }
+            }
+
+            update() {
+                if (this.gameOver || this.victory) return;
+                
+                this.spawnZombie();
+                this.checkVictory();
+                
+                // Обновляем зомби
+                for (let i = this.zombies.length - 1; i >= 0; i--) {
+                    const zombie = this.zombies[i];
+                    zombie.x += zombie.speed * zombie.direction;
+                    zombie.element.style.left = zombie.x + 'px';
+                    
+                    // Отражаем зомби если он идет влево
+                    if (zombie.direction < 0) {
+                        zombie.element.style.transform = 'scaleX(-1)';
+                    } else {
+                        zombie.element.style.transform = 'scaleX(1)';
+                    }
+                    
+                    // Проверяем расстояние до игрока
+                    const distance = Math.abs(zombie.x - this.player.x);
+                    if (distance < 60) {
+                        const now = Date.now();
+                        if (now - zombie.lastAttackTime > this.zombieAttackRate) {
+                            zombie.lastAttackTime = now;
+                            this.health -= this.zombieDamage;
+                            this.updateHealthDisplay();
+                            
+                            if (this.health <= 0) {
+                                this.gameOver = true;
+                                document.getElementById('final-score').textContent = this.score;
+                                document.getElementById('game-over').style.display = 'flex';
+                                clearInterval(this.gameLoop);
+                            }
+                        }
+                        
+                        // Повреждение оружия зомби
+                        if (now - zombie.lastWeaponDamageTime > this.weaponDamageRate) {
+                            zombie.lastWeaponDamageTime = now;
+                            this.damageWeapon();
+                        }
+                    }
+                    
+                    // Удаляем зомби за пределами экрана
+                    if ((zombie.direction > 0 && zombie.x > this.width + 100) ||
+                        (zombie.direction < 0 && zombie.x < -100)) {
+                        zombie.element.remove();
+                        this.zombies.splice(i, 1);
+                    }
+                }
+                
+                // Обновляем пули
+                for (let i = this.bullets.length - 1; i >= 0; i--) {
+                    const bullet = this.bullets[i];
+                    bullet.x += bullet.vx;
+                    bullet.y += bullet.vy;
+                    bullet.element.style.left = bullet.x + 'px';
+                    bullet.element.style.top = bullet.y + 'px';
+                    
+                    // Удаляем пули за пределами экрана
+                    if (bullet.x < 0 || bullet.x > this.width ||
+                        bullet.y < 0 || bullet.y > this.height) {
+                        bullet.element.remove();
+                        this.bullets.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // Проверяем попадания в зомби
+                    for (let j = this.zombies.length - 1; j >= 0; j--) {
+                        const zombie = this.zombies[j];
+                        if (this.checkCollision(bullet, zombie)) {
+                            zombie.health -= 50;
+                            
+                            if (zombie.health <= 0) {
+                                zombie.element.remove();
+                                this.zombies.splice(j, 1);
+                                this.score++;
+                                document.getElementById('score').textContent = this.score;
+                            }
+                            
+                            bullet.element.remove();
+                            this.bullets.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            checkCollision(bullet, zombie) {
+                const bulletRect = bullet.element.getBoundingClientRect();
+                const zombieRect = zombie.element.getBoundingClientRect();
+                
+                return bulletRect.right > zombieRect.left &&
+                       bulletRect.left < zombieRect.right &&
+                       bulletRect.bottom > zombieRect.top &&
+                       bulletRect.top < zombieRect.bottom;
+            }
+
+            updateAmmoDisplay() {
+                document.getElementById('ammo-count').textContent = this.ammo;
+                document.getElementById('ammo-total').textContent = this.totalAmmo;
+            }
+
+            updateHealthDisplay() {
+                document.getElementById('health-count').textContent = this.health;
+            }
+
+            updateWeaponHealthDisplay() {
+                document.getElementById('weapon-health-count').textContent = this.weaponHealth;
+            }
+
+            updateLevelDisplay() {
+                document.getElementById('level-count').textContent = this.level;
+            }
+
+            restartGame() {
+                // Очищаем зомби и пули
+                this.zombies.forEach(zombie => zombie.element.remove());
+                this.bullets.forEach(bullet => bullet.element.remove());
+                this.zombies = [];
+                this.bullets = [];
+                
+                // Сбрасываем статистику
+                this.score = 0;
+                this.ammo = 10;
+                this.totalAmmo = 50;
+                this.health = 100;
+                this.weaponHealth = 100;
+                this.level = 1;
+                this.gameOver = false;
+                this.victory = false;
+                this.weaponBroken = false;
+                this.zombiesToSpawn = 5 + this.level * 3;
+                this.zombiesSpawned = 0;
+                
+                // Обновляем UI
+                document.getElementById('score').textContent = this.score;
+                this.updateAmmoDisplay();
+                this.updateHealthDisplay();
+                this.updateWeaponHealthDisplay();
+                this.updateLevelDisplay();
+                document.getElementById('game-over').style.display = 'none';
+                document.getElementById('victory').style.display = 'none';
+                document.getElementById('weapon-broken').style.display = 'none';
+                
+                // Пересоздаем оружие
+                this.weapon.remove();
+                this.createWeapon();
+                
+                // Перезапускаем игровой цикл
+                clearInterval(this.gameLoop);
+                this.gameLoop = setInterval(this.update.bind(this), 16);
+            }
+
+            nextLevel() {
+                // Очищаем зомби и пули
+                this.zombies.forEach(zombie => zombie.element.remove());
+                this.bullets.forEach(bullet => bullet.element.remove());
+                this.zombies = [];
+                this.bullets = [];
+                
+                // Увеличиваем уровень и сложность
+                this.level++;
+                this.score = 0;
+                this.ammo = 10;
+                this.totalAmmo = 50 + this.level * 10;
+                this.health = 100;
+                this.weaponHealth = 100;
+                this.gameOver = false;
+                this.victory = false;
+                this.weaponBroken = false;
+                this.zombiesToSpawn = 5 + this.level * 3;
+                this.zombiesSpawned = 0;
+                this.zombieSpeed = 0.3 + this.level * 0.05;
+                this.zombieAttackRate = Math.max(1000, 5000 - this.level * 200);
+                this.weaponDamageRate = Math.max(1000, 2000 - this.level * 100);
+                
+                // Обновляем UI
+                document.getElementById('score').textContent = this.score;
+                this.updateAmmoDisplay();
+                this.updateHealthDisplay();
+                this.updateWeaponHealthDisplay();
+                this.updateLevelDisplay();
+                document.getElementById('victory').style.display = 'none';
+                document.getElementById('weapon-broken').style.display = 'none';
+                
+                // Пересоздаем оружие
+                this.weapon.remove();
+                this.createWeapon();
+                
+                // Перезапускаем игровой цикл
+                clearInterval(this.gameLoop);
+                this.gameLoop = setInterval(this.update.bind(this), 16);
+            }
+        }
+
+        // Запускаем игру при загрузке страницы
+        window.onload = () => {
+            new ZombieGame();
+        };
+    </script>
+</body>
+</html>
